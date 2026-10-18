@@ -1,11 +1,13 @@
----
-title: Iron War
-emoji: 🪖
-colorFrom: blue
-colorTo: red
-sdk: docker
-app_port: 7860
-pinned: false
----
-
-Iron War — сервер кімнат (socket.io). Гра: public/index.html
+{
+  "name": "iron-war",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4"
+  }
+}
