@@ -1,21 +1,24 @@
 
 'use strict';
 
-// Iron War — сервер: Socket.IO + акаунти + Ranked
-// Запуск: npm install && node server.js
-// Порт: process.env.PORT або 7680
-
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { Server } = require('socket.io');
 
-const PORT = Number(process.env.PORT || 7680);
-const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'accounts.json');
-const ROOT = path.resolve(__dirname);
+// ---------- Конфігурація ----------
 
-// ---------- Сховище акаунтів ----------
+const PORT = Number(process.env.PORT || 7680);
+const HOST = '0.0.0.0';
+const ROOT = path.resolve(__dirname, 'public');
+const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'accounts.json');
+
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
+  throw new Error('Некоректний PORT: ' + process.env.PORT);
+}
+
+// ---------- База акаунтів ----------
 
 let DB = { users: {}, tokens: {} };
 
@@ -24,15 +27,15 @@ try {
   DB.users = loaded.users || {};
   DB.tokens = loaded.tokens || {};
 } catch (err) {
-  console.log('База акаунтів ще не створена. Створюємо нову.');
+  console.log('База акаунтів буде створена автоматично.');
 }
 
-let saveT = null;
+let saveTimer = null;
 
 function save() {
-  clearTimeout(saveT);
+  clearTimeout(saveTimer);
 
-  saveT = setTimeout(() => {
+  saveTimer = setTimeout(() => {
     const tmp = DB_FILE + '.tmp';
 
     fs.writeFile(tmp, JSON.stringify(DB), err => {
@@ -49,7 +52,8 @@ function save() {
 }
 
 function saveSync() {
-  clearTimeout(saveT);
+  clearTimeout(saveTimer);
+
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(DB));
   } catch (err) {
@@ -57,31 +61,36 @@ function saveSync() {
   }
 }
 
-process.on('SIGINT', () => {
+let shuttingDown = false;
+
+function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
   saveSync();
-  process.exit(0);
+
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 5000).unref();
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+const hashPw = (password, salt) =>
+  crypto.scryptSync(password, salt, 64).toString('hex');
+
+const publicUser = user => ({
+  name: user.name,
+  rp: user.rp,
+  w: user.w,
+  l: user.l
 });
 
-process.on('SIGTERM', () => {
-  saveSync();
-  process.exit(0);
-});
+const normalizeName = name => name.toLowerCase();
 
-const hashPw = (pw, salt) =>
-  crypto.scryptSync(pw, salt, 64).toString('hex');
-
-const pub = u => ({
-  name: u.name,
-  rp: u.rp,
-  w: u.w,
-  l: u.l
-});
-
-const key = name => name.toLowerCase();
-
-function newToken(k) {
-  const token = crypto.randomBytes(24).toString('hex');
-  DB.tokens[token] = k;
+function newToken(userKey) {
+  const token = crypto.randomBytes(32).toString('hex');
+  DB.tokens[token] = userKey;
   save();
   return token;
 }
@@ -92,45 +101,46 @@ const WIN_RP = 25;
 const LOSE_RP = 20;
 const MAX_RP = 999;
 
-function applyResult(k, win) {
-  const u = DB.users[k];
-  if (!u) return null;
+function applyResult(userKey, won) {
+  const user = DB.users[userKey];
+  if (!user) return null;
 
-  const old = u.rp;
+  const oldRP = user.rp;
 
-  u.rp = Math.max(
+  user.rp = Math.max(
     0,
-    Math.min(MAX_RP, u.rp + (win ? WIN_RP : -LOSE_RP))
+    Math.min(MAX_RP, user.rp + (won ? WIN_RP : -LOSE_RP))
   );
 
-  if (win) u.w++;
-  else u.l++;
+  if (won) user.w++;
+  else user.l++;
 
   save();
 
   return {
-    rp: u.rp,
-    delta: u.rp - old,
-    win
+    rp: user.rp,
+    delta: user.rp - oldRP,
+    win: won
   };
 }
 
-// ---------- HTTP та файли гри ----------
+// ---------- HTTP та статичні файли ----------
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
-  '.ico': 'image/x-icon',
-  '.mp3': 'audio/mpeg',
-  '.ogg': 'audio/ogg',
-  '.wav': 'audio/wav',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.gif': 'image/gif',
   '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
   '.ttf': 'font/ttf'
@@ -150,45 +160,46 @@ const server = http.createServer((req, res) => {
 
   if (pathname === '/') pathname = '/index.html';
 
-  // Забороняємо доступ до системних файлів сервера.
   const relative = pathname.replace(/^\/+/, '');
   const file = path.resolve(ROOT, relative);
-  const base = path.basename(file);
 
-  if (
-    file !== ROOT &&
-    !file.startsWith(ROOT + path.sep)
-  ) {
+  if (file !== ROOT && !file.startsWith(ROOT + path.sep)) {
     res.writeHead(403);
     return res.end('Forbidden');
   }
 
-  if (
-    /^(server\.js|accounts\.json.*|package(-lock)?\.json)$/i.test(base) ||
-    base.startsWith('.')
-  ) {
+  if (path.basename(file).startsWith('.')) {
     res.writeHead(404);
     return res.end('Not Found');
   }
 
-  fs.readFile(file, (err, data) => {
-    if (err) {
+  fs.stat(file, (statErr, stat) => {
+    if (statErr || !stat.isFile()) {
       res.writeHead(404, {
         'Content-Type': 'text/plain; charset=utf-8'
       });
       return res.end('Not Found');
     }
 
-    res.writeHead(200, {
-      'Content-Type':
-        MIME[path.extname(file).toLowerCase()] ||
-        'application/octet-stream',
-      'X-Content-Type-Options': 'nosniff'
-    });
+    fs.readFile(file, (err, data) => {
+      if (err) {
+        res.writeHead(500);
+        return res.end('Internal Server Error');
+      }
 
-    res.end(data);
+      res.writeHead(200, {
+        'Content-Type':
+          MIME[path.extname(file).toLowerCase()] ||
+          'application/octet-stream',
+        'X-Content-Type-Options': 'nosniff'
+      });
+
+      res.end(data);
+    });
   });
 });
+
+// ---------- Socket.IO ----------
 
 const io = new Server(server, {
   maxHttpBufferSize: 1e6,
@@ -201,15 +212,16 @@ const io = new Server(server, {
 // ---------- Кімнати ----------
 
 const rooms = new Map();
-const sockRoom = new Map();
+const socketRooms = new Map();
 let queue = [];
 
-const nameOf = (sock, defaultName) =>
-  sock.user
+function playerName(sock, fallback) {
+  return sock.user
     ? sock.user.name
-    : (String(defaultName || '').trim().slice(0, 20) || 'Гравець');
+    : String(fallback || '').trim().slice(0, 20) || 'Гравець';
+}
 
-function genCode() {
+function generateCode() {
   let code;
 
   do {
@@ -219,10 +231,10 @@ function genCode() {
   return code;
 }
 
-function roomUpdate(room) {
+function updateRoom(room) {
   io.to(room.code).emit('roomUpdate', {
     code: room.code,
-    players: room.players.map(p => p.name)
+    players: room.players.map(player => player.name)
   });
 }
 
@@ -233,25 +245,23 @@ function startRoom(room) {
 
   io.to(room.code).emit('gameStart', {
     host: room.host,
-    seed: (Math.random() * 1e9) | 0,
-    ranked: !!room.ranked
+    seed: crypto.randomInt(0, 1000000000),
+    ranked: Boolean(room.ranked)
   });
 }
 
-function leave(sock) {
-  const code = sockRoom.get(sock.id);
+function leaveRoom(sock) {
+  queue = queue.filter(item => item.id !== sock.id);
 
-  queue = queue.filter(q => q.id !== sock.id);
-
+  const code = socketRooms.get(sock.id);
   if (!code) return;
 
-  sockRoom.delete(sock.id);
+  socketRooms.delete(sock.id);
   sock.leave(code);
 
   const room = rooms.get(code);
   if (!room) return;
 
-  // Вихід під час ранкеду зараховується як поразка.
   if (room.ranked && room.started && !room.over) {
     room.over = true;
 
@@ -269,32 +279,35 @@ function leave(sock) {
     }
   }
 
-  if (sock.id === room.host) {
+  if (room.host === sock.id) {
     io.to(code).emit('roomClosed');
 
     for (const player of room.players) {
-      sockRoom.delete(player.id);
+      socketRooms.delete(player.id);
 
-      const s = io.sockets.sockets.get(player.id);
-      if (s) s.leave(code);
+      const other = io.sockets.sockets.get(player.id);
+      if (other) other.leave(code);
     }
 
     rooms.delete(code);
-  } else {
-    room.players = room.players.filter(p => p.id !== sock.id);
+    return;
+  }
 
-    if (!room.players.length) {
-      rooms.delete(code);
-    } else {
-      roomUpdate(room);
-    }
+  room.players = room.players.filter(p => p.id !== sock.id);
+
+  if (room.players.length === 0) {
+    rooms.delete(code);
+  } else {
+    updateRoom(room);
   }
 }
 
-// ---------- Ранговий підбір ----------
+// ---------- Пошук ранкед-матчів ----------
 
 function tryMatch() {
-  queue = queue.filter(q => io.sockets.sockets.has(q.id));
+  queue = queue.filter(item =>
+    io.sockets.sockets.has(item.id)
+  );
 
   const now = Date.now();
 
@@ -303,213 +316,204 @@ function tryMatch() {
       const a = queue[i];
       const b = queue[j];
 
-      const wait = (now - Math.min(a.t, b.t)) / 1000;
-
       if (a.key === b.key) continue;
 
-      const allowedDifference = 100 + wait * 15;
+      const wait = (now - Math.min(a.t, b.t)) / 1000;
+      const maxDifference = 100 + wait * 15;
 
-      if (Math.abs(a.rp - b.rp) <= allowedDifference) {
-        queue = queue.filter(q => q !== a && q !== b);
+      if (Math.abs(a.rp - b.rp) > maxDifference) continue;
 
-        const sa = io.sockets.sockets.get(a.id);
-        const sb = io.sockets.sockets.get(b.id);
+      const sa = io.sockets.sockets.get(a.id);
+      const sb = io.sockets.sockets.get(b.id);
 
-        if (!sa || !sb || !sa.user || !sb.user) continue;
+      if (!sa || !sb || !sa.user || !sb.user) continue;
 
-        const code = 'R' + genCode();
+      queue = queue.filter(item => item !== a && item !== b);
 
-        const room = {
-          code,
-          host: a.id,
-          ranked: true,
-          started: false,
-          over: false,
-          players: [
-            { id: a.id, name: sa.user.name, key: a.key },
-            { id: b.id, name: sb.user.name, key: b.key }
-          ]
-        };
+      const code = 'R' + generateCode();
 
-        rooms.set(code, room);
+      const room = {
+        code,
+        host: sa.id,
+        ranked: true,
+        started: false,
+        over: false,
+        players: [
+          { id: sa.id, name: sa.user.name, key: a.key },
+          { id: sb.id, name: sb.user.name, key: b.key }
+        ]
+      };
 
-        for (const sock of [sa, sb]) {
-          sock.join(code);
-          sockRoom.set(sock.id, code);
-        }
+      rooms.set(code, room);
 
-        startRoom(room);
-        return tryMatch();
-      }
+      sa.join(code);
+      sb.join(code);
+
+      socketRooms.set(sa.id, code);
+      socketRooms.set(sb.id, code);
+
+      startRoom(room);
+      return tryMatch();
     }
   }
 }
 
-setInterval(tryMatch, 2000);
+const matchTimer = setInterval(tryMatch, 2000);
 
-// ---------- Захист від перебору паролів ----------
+// ---------- Обмеження запитів ----------
 
-const limits = new Map();
+const rateLimits = new Map();
 
 function rateOk(ip) {
   const now = Date.now();
-  const entry = limits.get(ip);
+  const entry = rateLimits.get(ip);
 
   if (!entry || now - entry.t > 60000) {
-    limits.set(ip, { n: 1, t: now });
+    rateLimits.set(ip, { n: 1, t: now });
     return true;
   }
 
-  return ++entry.n <= 12;
+  entry.n++;
+  return entry.n <= 12;
 }
 
-// ---------- Socket.IO ----------
+// ---------- Обробники Socket.IO ----------
 
 io.on('connection', sock => {
   const ip = sock.handshake.address;
 
   sock.user = null;
-  sock.ukey = null;
+  sock.userKey = null;
 
-  const attach = k => {
-    sock.user = DB.users[k];
-    sock.ukey = k;
-  };
+  function attach(userKey) {
+    sock.user = DB.users[userKey];
+    sock.userKey = userKey;
+  }
 
   // Реєстрація.
   sock.on('register', (data, callback) => {
     const cb = typeof callback === 'function' ? callback : () => {};
 
     if (!rateOk(ip)) {
-      return cb({
-        ok: false,
-        error: 'Забагато спроб, зачекай хвилину'
-      });
+      return cb({ ok: false, error: 'Забагато спроб, зачекай хвилину' });
     }
 
-    const name = String((data && data.name) || '').trim();
-    const pass = String((data && data.pass) || '');
+    const name = String(data?.name || '').trim();
+    const password = String(data?.pass || '');
 
-    if (!/^[\p{L}\p{N}_\-]{3,16}$/u.test(name)) {
+    if (!/^[\p{L}\p{N}_-]{3,16}$/u.test(name)) {
       return cb({
         ok: false,
         error: 'Логін: 3–16 символів (літери, цифри, _ -)'
       });
     }
 
-    if (pass.length < 6 || pass.length > 64) {
+    if (password.length < 6 || password.length > 64) {
       return cb({
         ok: false,
         error: 'Пароль має бути 6–64 символи'
       });
     }
 
-    const k = key(name);
+    const userKey = normalizeName(name);
 
-    if (DB.users[k]) {
-      return cb({
-        ok: false,
-        error: 'Цей логін уже зайнятий'
-      });
+    if (DB.users[userKey]) {
+      return cb({ ok: false, error: 'Цей логін уже зайнятий' });
     }
 
     const salt = crypto.randomBytes(16).toString('hex');
 
-    DB.users[k] = {
+    DB.users[userKey] = {
       name,
       salt,
-      hash: hashPw(pass, salt),
+      hash: hashPw(password, salt),
       rp: 0,
       w: 0,
       l: 0,
       created: Date.now()
     };
 
-    attach(k);
+    attach(userKey);
 
     cb({
       ok: true,
-      user: pub(DB.users[k]),
-      token: newToken(k)
+      user: publicUser(DB.users[userKey]),
+      token: newToken(userKey)
     });
   });
 
-  // Авторизація.
+  // Вхід.
   sock.on('login', (data, callback) => {
     const cb = typeof callback === 'function' ? callback : () => {};
 
     if (!rateOk(ip)) {
-      return cb({
-        ok: false,
-        error: 'Забагато спроб, зачекай хвилину'
-      });
+      return cb({ ok: false, error: 'Забагато спроб, зачекай хвилину' });
     }
 
-    const name = String((data && data.name) || '').trim();
-    const pass = String((data && data.pass) || '');
-    const k = key(name);
-    const user = DB.users[k];
+    const name = String(data?.name || '').trim();
+    const password = String(data?.pass || '');
+    const userKey = normalizeName(name);
+    const user = DB.users[userKey];
 
-    if (!user || pass.length > 64) {
-      return cb({
-        ok: false,
-        error: 'Невірний логін або пароль'
-      });
+    if (!user || password.length > 64) {
+      return cb({ ok: false, error: 'Невірний логін або пароль' });
     }
 
-    const a = Buffer.from(hashPw(pass, user.salt), 'hex');
-    const b = Buffer.from(user.hash, 'hex');
+    const actual = Buffer.from(hashPw(password, user.salt), 'hex');
+    const expected = Buffer.from(user.hash, 'hex');
 
-    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      return cb({
-        ok: false,
-        error: 'Невірний логін або пароль'
-      });
+    if (
+      actual.length !== expected.length ||
+      !crypto.timingSafeEqual(actual, expected)
+    ) {
+      return cb({ ok: false, error: 'Невірний логін або пароль' });
     }
 
-    attach(k);
+    attach(userKey);
 
     cb({
       ok: true,
-      user: pub(user),
-      token: newToken(k)
+      user: publicUser(user),
+      token: newToken(userKey)
     });
   });
 
   // Відновлення сесії.
   sock.on('auth', (data, callback) => {
     const cb = typeof callback === 'function' ? callback : () => {};
-    const token = data && DB.tokens[String(data.token)];
-    const k = token;
+    const token = String(data?.token || '');
+    const userKey = DB.tokens[token];
 
-    if (!k || !DB.users[k]) {
+    if (!userKey || !DB.users[userKey]) {
       return cb({ ok: false, error: 'bad_token' });
     }
 
-    attach(k);
-    cb({ ok: true, user: pub(DB.users[k]) });
+    attach(userKey);
+    cb({ ok: true, user: publicUser(DB.users[userKey]) });
   });
 
   // Вихід.
   sock.on('logout', data => {
-    if (data && data.token && DB.tokens[data.token]) {
-      delete DB.tokens[data.token];
+    const token = String(data?.token || '');
+
+    if (token && DB.tokens[token]) {
+      delete DB.tokens[token];
       save();
     }
 
     sock.user = null;
-    sock.ukey = null;
+    sock.userKey = null;
 
-    queue = queue.filter(q => q.id !== sock.id);
+    queue = queue.filter(item => item.id !== sock.id);
   });
 
-  // Створення приватної кімнати.
+  // Створення кімнати.
   sock.on('createRoom', (data, callback) => {
     const cb = typeof callback === 'function' ? callback : () => {};
 
-    leave(sock);
+    leaveRoom(sock);
 
-    const code = genCode();
+    const code = generateCode();
 
     const room = {
       code,
@@ -519,23 +523,23 @@ io.on('connection', sock => {
       over: false,
       players: [{
         id: sock.id,
-        name: nameOf(sock, data && data.name),
-        key: sock.ukey || null
+        name: playerName(sock, data?.name),
+        key: sock.userKey
       }]
     };
 
     rooms.set(code, room);
     sock.join(code);
-    sockRoom.set(sock.id, code);
+    socketRooms.set(sock.id, code);
 
     cb({ ok: true, code });
-    roomUpdate(room);
+    updateRoom(room);
   });
 
   // Приєднання до приватної кімнати.
   sock.on('joinPrivateRoom', (data, callback) => {
     const cb = typeof callback === 'function' ? callback : () => {};
-    const code = String((data && data.code) || '').trim().toUpperCase();
+    const code = String(data?.code || '').trim().toUpperCase();
     const room = rooms.get(code);
 
     if (!room || room.ranked) {
@@ -550,25 +554,25 @@ io.on('connection', sock => {
       return cb({ ok: false, error: 'Кімната повна' });
     }
 
-    leave(sock);
+    leaveRoom(sock);
 
     room.players.push({
       id: sock.id,
-      name: nameOf(sock, data && data.name),
-      key: sock.ukey || null
+      name: playerName(sock, data?.name),
+      key: sock.userKey
     });
 
     sock.join(code);
-    sockRoom.set(sock.id, code);
+    socketRooms.set(sock.id, code);
 
     cb({ ok: true, code });
-    roomUpdate(room);
+    updateRoom(room);
   });
 
-  // Запуск матчу хостом.
+  // Початок матчу.
   sock.on('startGame', (data, callback) => {
     const cb = typeof callback === 'function' ? callback : () => {};
-    const room = rooms.get(sockRoom.get(sock.id));
+    const room = rooms.get(socketRooms.get(sock.id));
 
     if (!room || room.host !== sock.id) {
       return cb({ ok: false, error: 'Розпочати може лише хост' });
@@ -586,7 +590,7 @@ io.on('connection', sock => {
   sock.on('quickMatch', (data, callback) => {
     const cb = typeof callback === 'function' ? callback : () => {};
 
-    leave(sock);
+    leaveRoom(sock);
 
     let room = [...rooms.values()].find(
       r => r.quick && !r.started && r.players.length < 2
@@ -595,18 +599,18 @@ io.on('connection', sock => {
     if (room) {
       room.players.push({
         id: sock.id,
-        name: nameOf(sock, data && data.name),
-        key: sock.ukey || null
+        name: playerName(sock, data?.name),
+        key: sock.userKey
       });
 
       sock.join(room.code);
-      sockRoom.set(sock.id, room.code);
+      socketRooms.set(sock.id, room.code);
 
       cb({ ok: true, code: room.code, host: false });
-      roomUpdate(room);
+      updateRoom(room);
       startRoom(room);
     } else {
-      const code = genCode();
+      const code = generateCode();
 
       room = {
         code,
@@ -617,21 +621,21 @@ io.on('connection', sock => {
         over: false,
         players: [{
           id: sock.id,
-          name: nameOf(sock, data && data.name),
-          key: sock.ukey || null
+          name: playerName(sock, data?.name),
+          key: sock.userKey
         }]
       };
 
       rooms.set(code, room);
       sock.join(code);
-      sockRoom.set(sock.id, code);
+      socketRooms.set(sock.id, code);
 
       cb({ ok: true, code, host: true });
-      roomUpdate(room);
+      updateRoom(room);
     }
   });
 
-  // Черга ранкеду.
+  // Ранговий пошук.
   sock.on('rankedQueue', (data, callback) => {
     const cb = typeof callback === 'function' ? callback : () => {};
 
@@ -639,11 +643,11 @@ io.on('connection', sock => {
       return cb({ ok: false, error: 'Потрібен акаунт' });
     }
 
-    leave(sock);
+    leaveRoom(sock);
 
     queue.push({
       id: sock.id,
-      key: sock.ukey,
+      key: sock.userKey,
       rp: sock.user.rp,
       t: Date.now()
     });
@@ -653,22 +657,23 @@ io.on('connection', sock => {
   });
 
   sock.on('cancelRanked', () => {
-    queue = queue.filter(q => q.id !== sock.id);
+    queue = queue.filter(item => item.id !== sock.id);
   });
 
-  sock.on('leaveRoom', () => leave(sock));
+  sock.on('leaveRoom', () => leaveRoom(sock));
 
-  // Ігровий обмін: хост надсилає знімки, гість надсилає команди.
+  // Хост -> гість: ігрові знімки.
   sock.on('snap', data => {
-    const room = rooms.get(sockRoom.get(sock.id));
+    const room = rooms.get(socketRooms.get(sock.id));
 
     if (room && room.host === sock.id && room.started) {
       sock.to(room.code).emit('snap', data);
     }
   });
 
+  // Гість -> хост: ігрові команди.
   sock.on('cmd', data => {
-    const room = rooms.get(sockRoom.get(sock.id));
+    const room = rooms.get(socketRooms.get(sock.id));
 
     if (room && room.host !== sock.id && room.started) {
       io.to(room.host).emit('cmd', data);
@@ -677,7 +682,7 @@ io.on('connection', sock => {
 
   // Завершення ранкед-матчу.
   sock.on('gameOver', data => {
-    const room = rooms.get(sockRoom.get(sock.id));
+    const room = rooms.get(socketRooms.get(sock.id));
 
     if (!room || room.host !== sock.id || !room.started || room.over) {
       return;
@@ -698,24 +703,30 @@ io.on('connection', sock => {
         if (!player) continue;
 
         const result = applyResult(player.key, won);
-
-        if (result) {
-          io.to(player.id).emit('rankUpdate', result);
-        }
+        if (result) io.to(player.id).emit('rankUpdate', result);
       }
     }
   });
 
-  sock.on('disconnect', () => leave(sock));
+  sock.on('disconnect', () => leaveRoom(sock));
 });
 
-// ---------- Запуск ----------
+// ---------- Запуск сервера ----------
 
 server.on('error', err => {
-  console.error('Помилка HTTP-сервера:', err);
+  console.error('HTTP server error:', err);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Iron War запущено на порту ${PORT}`);
-  console.log(`Режим: ${process.env.NODE_ENV || 'production'}`);
+server.listen(PORT, HOST, () => {
+  console.log(`Iron War запущено на ${HOST}:${PORT}`);
+  console.log(`Статичні файли: ${ROOT}`);
+  console.log(`База акаунтів: ${DB_FILE}`);
+});
+
+io.engine.on('connection_error', err => {
+  console.error('Socket.IO connection error:', err.message);
+});
+
+process.on('unhandledRejection', err => {
+  console.error('Unhandled rejection:', err);
 });
