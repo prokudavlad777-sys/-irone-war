@@ -6,7 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { Server } = require('socket.io');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 7680;
 const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'accounts.json');
 const ROOT = __dirname;
 
