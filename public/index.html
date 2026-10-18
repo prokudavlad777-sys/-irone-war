@@ -28,21 +28,21 @@ input{display:block;width:100%;margin-top:10px;padding:13px;border:0;border-radi
 <canvas id="c"></canvas>
 <div class="pill" style="left:14px">$ <b id="cash">0</b> <small style="display:inline;margin:0 0 0 6px" id="inc"></small></div>
 <div id="bars"><div class="bar"><i id="b0"></i></div><div class="bar"><i id="b1"></i></div></div>
-<div class="pill" id="top"><span id="mu">🔊</span><span id="pz">⏸</span></div>
-<div id="toast"></div><canvas id="mm" width="240" height="110"></canvas>
+<div class="pill" id="top"><span id="nt">☀️</span><span id="mu">🔊</span><span id="pz">⏸</span></div>
+<div class="pill" id="rkb" style="display:none;right:150px;font-size:13px">🏆 РАНКЕД · дохід ÷3</div><div id="toast"></div><canvas id="mm" width="240" height="110"></canvas>
 <div id="panel"><div class="grip" id="grip"><i></i></div><div id="cards"></div></div>
-<div id="menu"><div class="box" id="mbox"><h1 id="ttl">IRON <span>WAR</span></h1><div id="sub"></div>
-<button id="play">Грати</button><button id="map">Нова карта</button><button id="dif"></button><button id="online">Онлайн · кімната</button>
+<div id="menu"><div class="box" id="mbox"><h1 id="ttl">IRON <span>WAR</span></h1><div id="sub"></div><div id="accl" style="margin:-12px 0 16px;font-size:14px;font-weight:600"></div>
+<button id="play">Грати</button><button id="map">Нова карта</button><button id="dif"></button><button id="acb">Акаунт / Вхід</button><button id="online">Онлайн · кімната</button>
 <small>1–9, 0 — виклик · споруди — клік по кружечку · CAB / ROCKET / NUKE — клік по карті<br>WASD / стрілки / тягни мишкою — камера · колесо — зум · лінія ділить карту на твою й ворожу територію<br>ПКМ / Esc — скасувати · P — пауза</small></div>
 <div class="box" id="rbox" style="display:none"><h1 style="font-size:34px">ОНЛАЙН</h1><div style="opacity:.7;margin-bottom:12px;font-size:14px">Кімната за кодом</div>
 <input id="pn" maxlength="20" placeholder="Твоє ім'я"><button id="rc">Створити кімнату</button>
-<input id="rcode" maxlength="24" placeholder="Код кімнати"><button id="rj">Приєднатися</button><button id="rq">Швидкий пошук (1 на 1)</button>
+<input id="rcode" maxlength="24" placeholder="Код кімнати"><button id="rj">Приєднатися</button><button id="rq">Швидкий пошук (1 на 1)</button><button id="rk" style="background:#b8861b">🏆 Ранкед (1 на 1)</button><div id="rkinfo" style="margin-top:6px;font-size:12px;opacity:.85"></div>
 <div id="rinfo" style="display:none;margin-top:16px"><div>Код кімнати: <b id="rcd" style="font-size:24px;letter-spacing:.12em"></b></div><div id="rpl" style="margin:10px 0;font-size:14px;text-align:left"></div>
 <button id="rs" style="display:none;background:var(--ac)">Розпочати</button><div id="rw" style="display:none;opacity:.7;font-size:13px">Чекаємо, поки хост розпочне гру…</div></div>
-<button id="rb">Назад</button></div></div>
+<button id="rb">Назад</button></div><div class="box" id="abox" style="display:none"><h1 style="font-size:34px">АКАУНТ</h1><div id="ainfo" style="margin-bottom:12px;font-size:15px;line-height:1.5"></div><div id="aform"><input id="an" maxlength="16" placeholder="Логін" autocomplete="username"><input id="ap" type="password" maxlength="64" placeholder="Пароль (6+ символів)" autocomplete="current-password"><button id="ali" style="background:var(--ac)">Увійти</button><button id="are">Зареєструватись</button></div><button id="alo" style="display:none">Вийти</button><div id="aerr" style="color:#ff8a80;font-size:13px;margin-top:10px;min-height:16px"></div><button id="ab">Назад</button></div></div>
 <script>
-const $=i=>document.getElementById(i),cv=$('c'),G=cv.getContext('2d'),H=1800,TAU=Math.PI*2,CS=4,LV=.46;
-var online=0,role=null,evq=[],snapT=0,SID=1,UM=new Map();let g=G,W=1600,sc=1,cx=0,cy=0,cz=1,SL=[],ST=[],RS=.6,kd={},gw,gh,hm,D=[],HQP,tc,scar,sg,seed,CL=[],U=[],P=[],F=[],cash=[0,0],hq=[],mode='menu',armed=null,ms={x:0,y:0},shake=0,flash=0,aiT=0,last=0,di=1,tt=0,tmo;
+const $=i=>document.getElementById(i),cv=$('c'),G=cv.getContext('2d'),TAU=Math.PI*2,CS=4,LV=.46;
+var H=1800,ranked=0,gt=0,nf=0,RM=1,nightOn=0,IM=1,ME=null,rqOn=0,online=0,role=null,evq=[],snapT=0,SID=1,UM=new Map();let g=G,W=1600,sc=1,cx=0,cy=0,cz=1,SL=[],ST=[],RS=.6,kd={},gw,gh,hm,D=[],HQP,tc,scar,sg,seed,CL=[],U=[],P=[],F=[],cash=[0,0],hq=[],mode='menu',armed=null,ms={x:0,y:0},shake=0,flash=0,aiT=0,last=0,di=1,tt=0,tmo;
 const DF=[['Легка',.75],['Нормальна',1],['Складна',1.35]],INC=45,STR={cab:60,rocket:85,nuke:280};
 const TY={tank:{n:'TANK',c:104,hp:260,s:46,r:230,d:30,cd:1.1,dom:'g',tur:1,es:'tank'},shahid:{n:'SHAHID',c:62,hp:18,s:125,dom:'a',kam:1,es:'shahid'},
 mig23:{n:'MIG-23',c:240,hp:130,s:200,tr:2.3,r:280,d:12,cd:.22,dom:'a',hitA:1},mi24:{n:'MI-24',c:350,hp:300,s:85,tr:2.6,r:250,d:17,cd:.3,dom:'a',hitA:1,hov:1,es:'heli'},
@@ -70,7 +70,7 @@ for(let k=0;k<q.length;k++){const c=q[k],ci=c%gw,cj=c/gw|0;for(const[a,b]of N){c
 function flow(u,dd){const i=u.x/CS|0,j=u.y/CS|0;let best=dd[j*gw+i],bx=0,by=0;
 for(let a=0;a<8;a++){const ni=i+Math.round(Math.cos(a*.785)*3),nj=j+Math.round(Math.sin(a*.785)*3);if(ni<0||nj<0||ni>=gw||nj>=gh)continue;const v=dd[nj*gw+ni];if(v<best){best=v;bx=ni-i;by=nj-j}}
 return bx||by?Math.atan2(by,bx):null}
-function gen(){W=Math.round(H*2.2);gw=Math.ceil(W/CS);gh=Math.ceil(H/CS);cx=W/2;cy=H/2;cz=0;fit();
+function gen(){H=ranked?2700:1800;W=Math.round(H*2.2);gw=Math.ceil(W/CS);gh=Math.ceil(H/CS);cx=W/2;cy=H/2;cz=0;fit();
 for(let n=0;n<80;n++){seed=Math.random()*900|0;const nz=mk(seed);hm=new Float32Array(gw*gh);let lc=0;
 for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){const u=i/gw,v=j/gh,e=Math.max(0,1-Math.min(u,1-u)/.2),h=nz(u*W/H*4.4,v*5.2+2)+e*e*.3+(.5-Math.abs(v-.5))*.1;hm[j*gw+i]=h;if(h>=LV)lc++}
 const pos=[.1,.9].map(f=>{const x=W*f;for(let d=0;d<H*.4;d+=6)for(const s of[1,-1]){const y=H/2+s*d;let ok=land(x,y);for(let a=0;a<8;a++)if(!land(x+Math.cos(a*.785)*55,y+Math.sin(a*.785)*55))ok=0;if(ok)return[x,y]}return null}),fr=lc/(gw*gh);
@@ -92,7 +92,7 @@ function fit(){const d=devicePixelRatio||1;cv.width=innerWidth*d;cv.height=inner
 function zoom(z){const b=cv.height/900,mn=Math.max(900/H,cv.width/(b*W));cz=Math.max(mn,Math.min(2.2,z));sc=b*cz;const vw=cv.width/sc/2,vh=cv.height/sc/2;cx=Math.max(vw,Math.min(W-vw,cx));cy=Math.max(vh,Math.min(H-vh,cy))}
 function mkSlots(){SL=[];const ok=(x,y)=>{if(x<60||y<60||x>W-60||y>H-60)return 0;for(let a=0;a<8;a++)if(!land(x+Math.cos(a*.785)*34,y+Math.sin(a*.785)*34))return 0;const e=hm[(y/CS|0)*gw+(x/CS|0)]-LV;return land(x,y)&&e>.02&&e<.3&&SL.every(q=>Math.hypot(q.x-x,q.y-y)>95)&&HQP.every(p=>Math.hypot(p[0]-x,p[1]-y)>100)};
 const add=(n,px,py,r0,r1,own,tr)=>{for(let t=0;t<tr&&n>0;t++){const a=Math.random()*TAU,rr=r0+Math.random()*(r1-r0),x=px+Math.cos(a)*rr,y=py+Math.sin(a)*rr;if(ok(x,y)){SL.push({x,y,own,b:null});n--}}};
-HQP.forEach((p,i)=>add(7,p[0],p[1],130,380,i,800));add(10,W/2,H/2,0,Math.min(W*.3,1000),-1,2000);SL.forEach(f=>{if(f.own===-1)f.own=f.x<W/2?0:1})}
+HQP.forEach((p,i)=>add(ranked?12:7,p[0],p[1],130,ranked?560:380,i,ranked?2000:800));add(ranked?24:10,W/2,H/2,0,Math.min(W*.3,ranked?1700:1000),-1,ranked?5000:2000);SL.forEach(f=>{if(f.own===-1)f.own=f.x<W/2?0:1})}
 let AC,mg,nb,rv,LP={},mute=0,lt={},det,WS=[];
 function au(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return}
 mg=AC.createGain();mg.gain.value=.6;mg.connect(AC.destination);rv=AC.createConvolver();{const L=AC.sampleRate*2,ib=AC.createBuffer(2,L,AC.sampleRate);for(let c=0;c<2;c++){const d=ib.getChannelData(c);for(let i=0;i<L;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/L,2.5)}rv.buffer=ib;const rg=AC.createGain();rg.gain.value=.6;rv.connect(rg);rg.connect(mg)}nb=AC.createBuffer(1,AC.sampleRate*6,AC.sampleRate);const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
@@ -133,7 +133,7 @@ function loadSnd(n){const ex=['mp3','ogg','wav'];let i=0;const a=new Audio();a.p
 function playF(n){const a=FA[n];if(!a)return false;const c=a.cloneNode();c.volume=1;c.play().catch(()=>{});return true}
 Object.values(SF).concat(Object.values(EF)).forEach(loadSnd);
 function mu(){mute=!mute;$('mu').textContent=mute?'🔇':'🔊'}
-function start(){U=[];P=[];F=[];ST=[];SL.forEach(f=>f.b=null);cash=[700,700];cx=HQP[0][0]+260;cy=HQP[0][1];cz=1;zoom(1);toast('Будуй споруди на кружечках своєї території');hq=HQP.map((p,s)=>({x:p[0],y:p[1],hp:3000,m:3000,cd:0,s}));armed=null;aiT=4;mode='play';$('menu').style.display='none';sel()}
+function start(){U=[];P=[];F=[];ST=[];SL.forEach(f=>f.b=null);cash=[700,700];gt=0;nightOn=0;IM=ranked?1/3:1;$('rkb').style.display=ranked?'block':'none';cx=HQP[0][0]+260;cy=HQP[0][1];cz=1;zoom(1);toast('Будуй споруди на кружечках своєї території');hq=HQP.map((p,s)=>({x:p[0],y:p[1],hp:3000,m:3000,cd:0,s}));armed=null;aiT=4;mode='play';$('menu').style.display='none';sel()}
 function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(tmo);tmo=setTimeout(()=>e.style.opacity=0,2200)}
 function spawn(k,s,px,py){const h=hq[s],T=TY[k];let x=h.x,y=h.y;
 if(T.dom==='g'){for(let n=0;n<30;n++){const a=Math.random()*TAU,r=60+Math.random()*50,px=h.x+Math.cos(a)*r,py=h.y+Math.sin(a)*r;if(land(px,py)){x=px;y=py;break}}}else{x+=(Math.random()-.5)*40;y+=(Math.random()-.5)*40}
@@ -152,10 +152,22 @@ if(!s)snd('click');cash[s]-=T.c;return true}
 function fx(x,y,r,big){for(let i=0;i<(big?70:14);i++){const a=Math.random()*TAU,s=Math.random()*r*(big?2.2:3);F.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:.5+Math.random()*.7,m:1.2,r:4+Math.random()*r*.18,k:'f'})}F.push({x,y,vx:0,vy:0,l:.5,m:.5,r,k:'r'})}
 function boom(x,y,r,d,s,fr){snd('boom',x,r);for(const e of U.concat(hq,ST)){if(!fr&&e.s===s)continue;const dd=Math.hypot(e.x-x,e.y-y);if(dd<r)e.hp-=d*(1-dd/r*.6)}
 fx(x,y,r);const q=sg.createRadialGradient(x,y,0,x,y,r*.7);q.addColorStop(0,'rgba(20,16,12,.6)');q.addColorStop(1,'rgba(20,16,12,0)');sg.fillStyle=q;sg.fillRect(x-r,y-r,r*2,r*2);shake=Math.max(shake,Math.min(30,r/6))}
+const NE=30,NL=12;
+function nightF(t){const p=t%(NE+NL);if(p<NE)return 0;const n=p-NE;return Math.max(0,Math.min(1,n/3,(NL-n)/3))}
+function glow(x,y,r,a,col){const q=g.createRadialGradient(x,y,0,x,y,r);q.addColorStop(0,'rgba('+col+','+a+')');q.addColorStop(1,'rgba('+col+',0)');g.fillStyle=q;g.fillRect(x-r,y-r,r*2,r*2)}
+function nightDraw(sx,sy){g.save();g.setTransform(1,0,0,1,0,0);g.fillStyle='rgba(4,10,38,'+(.62*nf)+')';g.fillRect(0,0,cv.width,cv.height);
+g.setTransform(sc,0,0,sc,cv.width/2-cx*sc+sx,cv.height/2-cy*sc+sy);g.globalCompositeOperation='lighter';
+const vw=cv.width/sc/2+120,vh=cv.height/sc/2+120,on=o=>Math.abs(o.x-cx)<vw&&Math.abs(o.y-cy)<vh;
+for(const h of hq)if(on(h))glow(h.x,h.y,150,.5*nf,'255,220,140');
+for(const e of ST)if(on(e))glow(e.x,e.y,90,.45*nf,'255,200,120');
+for(const u of U){if(!on(u))continue;if(TY[u.k].dom==='a')glow(u.x,u.y,34,.5*nf,'255,120,100');else glow(u.x+Math.cos(u.a)*28,u.y+Math.sin(u.a)*28,46,.45*nf,'255,240,190')}
+for(const f of F)if(f.k==='f'&&on(f))glow(f.x,f.y,f.r*3+20,.55*nf*(f.l/f.m),'255,170,70');
+for(const p of P)if((p.t==='m'||p.t==='s')&&on(p))glow(p.x,p.y,50,.6*nf,'255,180,90');
+g.restore()}
 function steer(u,a,tr,dt){u.a+=Math.max(-tr*dt,Math.min(tr*dt,ang(a,u.a)))}
 function shoot(u,e,T){u.cd=T.cd;snd(TY[u.k].tur?'cannon':'gun',u.x);F.push({x:u.x+Math.cos(TY[u.k].tur?u.ta:u.a)*20,y:u.y+Math.sin(TY[u.k].tur?u.ta:u.a)*20,vx:0,vy:0,l:.08,m:.08,r:6,k:'f'});const a=TY[u.k].tur?u.ta:u.a,sp=(Math.random()-.5)*6;P.push({t:'b',x1:u.x+Math.cos(a)*16,y1:u.y+Math.sin(a)*16,x2:e.x+sp,y2:e.y+sp,l:.09});e.hp-=T.d}
 const fwd=(u,s,dt)=>{u.x+=Math.cos(u.a)*s*dt;u.y+=Math.sin(u.a)*s*dt};
-function upd(u,dt){const T=TY[u.k],o=hq[1-u.s];u.cd-=dt;u.t+=dt;const vs=true;if(T.ppo)return ppo(u,T,dt);if(T.cargo)return cargo(u,T,dt,o);if(T.bomber)return bomb(u,T,dt,o);
+function upd(u,dt){const T0=TY[u.k],T=T0.r&&RM<1?Object.assign({},T0,{r:T0.r*RM}):T0,o=hq[1-u.s];u.cd-=dt;u.t+=dt;const vs=true;if(T.ppo)return ppo(u,T,dt);if(T.cargo)return cargo(u,T,dt,o);if(T.bomber)return bomb(u,T,dt,o);
 if(T.kam){let tg=o,bd=500;for(const e of U.concat(ST))if(e.s!==u.s&&(e.sl||TY[e.k].dom==='g')){const d=ds(u,e);if(d<bd){bd=d;tg=e}}
 if(!u.w&&ds(u,tg)<230){u.w=1;snd('shwhistle',u.x)}steer(u,Math.atan2(tg.y-u.y,tg.x-u.x),T.kt||3.5,dt);fwd(u,T.s,dt);if(ds(u,tg)<(tg.sl?30:22)){boom(u.x,u.y,T.bl||55,T.bd||90,u.s,0);u.hp=0}return}
 let tg=null,bd=T.r;for(const e of U)if(e.s!==u.s&&(T.hitA||TY[e.k].dom!=='a')){const d=ds(u,e);if(d<bd){bd=d;tg=e}}
@@ -174,7 +186,7 @@ let l=KEYS.filter(k=>!TY[k].sb&&TY[k].c<=m&&(k!=='nuke'||Math.random()<.5)&&(k!=
 const my=U.filter(u=>u.s===0&&TY[u.k].dom==='g').concat(ST.filter(e=>e.s===0)),c=my.length&&!(k==='nuke'&&Math.random()<.6)?my[Math.random()*my.length|0]:hq[0];
 if(k==='ppo'){const an=Math.random()*TAU,rr=140+Math.random()*260;buy(k,1,hq[1].x+Math.cos(an)*rr,hq[1].y+Math.sin(an)*rr);return}
 buy(k,1,c.x+(Math.random()-.5)*40,c.y+(Math.random()-.5)*40)}
-function tick(dt){cash[0]+=INC*dt;cash[1]+=INC*dt*(online?1:DF[di][1]);if(!online)ai(dt);stu(dt);for(const u of U)upd(u,dt);
+function tick(dt){gt+=dt;cash[0]+=INC*IM*dt;cash[1]+=INC*IM*dt*(online?1:DF[di][1]);if(!online)ai(dt);stu(dt);for(const u of U)upd(u,dt);
 for(const h of hq){h.cd-=dt;if(h.cd<=0){let t=null,bd=320;for(const e of U)if(e.s!==h.s){const d=ds(h,e);if(d<bd){bd=d;t=e}}if(t){h.cd=.45;snd('gun',h.x);P.push({t:'b',x1:h.x,y1:h.y,x2:t.x,y2:t.y,l:.09});t.hp-=9}}}
 for(const p of P){if(p.t==='b')p.l-=dt;else if(p.t==='k'){p.l-=dt;if(p.l<=0)boom(p.x,p.y,52,115,p.s,0)}
 else if(p.t==='s'){p.l-=dt;if(!p.tg||p.tg.hp<=0)p.l=0;else{const a=Math.atan2(p.tg.y-p.y,p.tg.x-p.x),st=p.v*dt;p.a=a;if(ds(p,p.tg)<=st+8){p.tg.hp-=60;fx(p.tg.x,p.tg.y,16);snd('boom',p.x,20);p.l=0}else{p.x+=Math.cos(a)*st;p.y+=Math.sin(a)*st;F.push({x:p.x-Math.cos(a)*10,y:p.y-Math.sin(a)*10,vx:0,vy:0,l:.5,m:.5,r:3,k:'s'})}}}
@@ -185,7 +197,7 @@ P=P.filter(p=>p.l>0);for(const u of U)if(u.hp<=0&&!TY[u.k].kam&&!u.gone){fx(u.x,
 for(const f of F){f.l-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.96;f.vy*=.96}F=F.filter(f=>f.l>0);
 if(hq[1].hp<=0||hq[0].hp<=0){mode='over';if(online&&socket)socket.emit('gameOver',{w:hq[1].hp<=0?0:1});showMenu(hq[1].hp<=0?'ПЕРЕМОГА':'ПОРАЗКА','Штаб знищено','Грати знову')}}
 function stu(dt){for(const u of U){u.rv[0]-=dt;u.rv[1]-=dt}
-for(const r of ST){{const pa=TY[r.k].pay;r.t+=dt;if(r.t>=pa[1]){r.t-=pa[1];cash[r.s]+=pa[0]*(r.s&&!online?DF[di][1]:1);if(!r.s)F.push({x:r.x,y:r.y-20,vx:0,vy:-22,l:1.6,m:1.6,k:'t',tx:'+'+pa[0]})}}}}
+for(const r of ST){{const pa=TY[r.k].pay;r.t+=dt;if(r.t>=pa[1]){r.t-=pa[1];cash[r.s]+=pa[0]*IM*(r.s&&!online?DF[di][1]:1);if(!r.s)F.push({x:r.x,y:r.y-20,vx:0,vy:-22,l:1.6,m:1.6,k:'t',tx:'+'+Math.round(pa[0]*IM)})}}}}
 function ppo(u,T,dt){let tg=null,bd=430;for(const e of U)if(e.s!==u.s&&TY[e.k].dom==='a'){const d=ds(u,e);if(d<bd){bd=d;tg=e}}
 if(tg){u.ta+=ang(Math.atan2(tg.y-u.y,tg.x-u.x),u.ta)*Math.min(1,8*dt);if(u.cd<=0){u.cd=.8;snd('launch',u.x);P.push({t:'s',x:u.x+Math.cos(u.ta)*20,y:u.y+Math.sin(u.ta)*20,tg,s:u.s,v:620,l:4,a:u.ta})}}
 for(const p of P)if(p.t==='m'&&p.s!==u.s&&ds(u,p)<400&&Math.random()<.35*dt){p.l=0;fx(p.x,p.y,24);snd('boom',p.x,30)}}
@@ -252,7 +264,7 @@ else if(f.k==='s'||f.k==='d'){g.fillStyle=`rgba(${f.k==='d'?'150,125,90':'230,23
 else if(f.k==='t'){g.fillStyle='rgba(255,215,90,'+u+')';g.font='700 18px sans-serif';g.textAlign='center';g.fillText(f.tx,f.x,f.y)}
 else{g.strokeStyle=`rgba(255,230,180,${u})`;g.lineWidth=4;g.beginPath();g.arc(f.x,f.y,f.r*(1-u*.9),0,TAU);g.stroke()}}}
 for(const c of CL){const x=(c.x+t*c.v)%(W+500)-250,q=g.createRadialGradient(x,c.y,0,x,c.y,c.r);q.addColorStop(0,'rgba(255,255,255,.2)');q.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=q;g.fillRect(x-c.r,c.y-c.r,c.r*2,c.r*2)}
-if(armed&&mode==='play'){const r=STR[armed]||16,{x,y}=ms;g.strokeStyle='rgba(255,70,60,.95)';g.lineWidth=2.5;g.setLineDash([8,6]);g.beginPath();g.arc(x,y,r,0,TAU);g.stroke();g.setLineDash([]);g.beginPath();g.moveTo(x-12,y);g.lineTo(x+12,y);g.moveTo(x,y-12);g.lineTo(x,y+12);g.stroke()}
+if(nf>0&&mode!=='menu')nightDraw(sx,sy);if(armed&&mode==='play'){const r=STR[armed]||16,{x,y}=ms;g.strokeStyle='rgba(255,70,60,.95)';g.lineWidth=2.5;g.setLineDash([8,6]);g.beginPath();g.arc(x,y,r,0,TAU);g.stroke();g.setLineDash([]);g.beginPath();g.moveTo(x-12,y);g.lineTo(x+12,y);g.moveTo(x,y-12);g.lineTo(x,y+12);g.stroke()}
 {g.setTransform(1,0,0,1,0,0);const vg=g.createRadialGradient(cv.width/2,cv.height/2,cv.height*.45,cv.width/2,cv.height/2,Math.max(cv.width,cv.height)*.7);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,10,25,.4)');g.fillStyle=vg;g.fillRect(0,0,cv.width,cv.height)}
 if(flash>0){g.setTransform(1,0,0,1,0,0);g.fillStyle=`rgba(255,255,255,${flash})`;g.fillRect(0,0,cv.width,cv.height);flash-=.02}}
 function drawIcon(c,k){const x=c.getContext('2d'),T=TY[k];x.translate(84,62);g=x;
@@ -261,14 +273,14 @@ if(k==='nuke'){x.fillStyle='#444';x.beginPath();x.ellipse(0,-12,30,18,0,0,TAU);x
 else if(T.sb){x.scale(1.5,1.5);drawST({k,s:0,ba:.7,t:0},0,1)}
 else{x.scale(T.is||1.7,T.is||1.7);x.rotate(T.st?-.8:-Math.PI/2);shape(k,'#5f666d','#5f666d',{ic:1})}g=G}
 function sel(){KEYS.forEach(k=>{const e=TY[k].el;e.classList.toggle('sel',armed===k);e.classList.toggle('off',mode!=='play'||cash[0]<TY[k].c)});
-$('cash').textContent=Math.floor(cash[0]).toLocaleString('en');$('inc').textContent='+'+Math.round(INC+ST.filter(e=>e.s===0&&TY[e.k].pay).reduce((a,e)=>a+TY[e.k].pay[0]/TY[e.k].pay[1],0))+'/с';if(hq.length){$('b0').style.width=Math.max(0,hq[0].hp/30)+'%';$('b1').style.width=Math.max(0,hq[1].hp/30)+'%'}}
+$('cash').textContent=Math.floor(cash[0]).toLocaleString('en');$('inc').textContent='+'+Math.round(IM*(INC+ST.filter(e=>e.s===0&&TY[e.k].pay).reduce((a,e)=>a+TY[e.k].pay[0]/TY[e.k].pay[1],0)))+'/с';$('nt').textContent=nf>.4?'🌙':'☀️';if(hq.length){$('b0').style.width=Math.max(0,hq[0].hp/30)+'%';$('b1').style.width=Math.max(0,hq[1].hp/30)+'%'}}
 function pickCard(k){if(mode!=='play')return;if(TY[k].st||TY[k].sb||TY[k].ppo){armed=armed===k?null:k;if(armed)toast(TY[k].sb?'Клікни по вільному кружечку':TY[k].ppo?'Клікни по своїй суші':'Обери ціль на карті · ПКМ / Esc — скасувати')}else if(!buy(k,0))toast('Не вистачає грошей')}
 KEYS.forEach((k,i)=>{const T=TY[k],d=document.createElement('div');d.className='card';d.innerHTML=`<u>${i<10?(i+1)%10:''}</u><canvas width="168" height="124"></canvas><b>${T.n}</b><span>${T.c} dollars</span>${T.h?'<span style="display:block;opacity:.6">'+T.h+'</span>':''}`;
 drawIcon(d.querySelector('canvas'),k);d.onclick=()=>pickCard(k);T.el=d;$('cards').append(d)});
 function showMenu(t,s,b){$('menu').style.display='flex';$('ttl').innerHTML=t;if(s)$('sub').textContent=s;$('play').textContent=b}
 function resume(){mode='play';$('menu').style.display='none'}
 function pause(){if(online)return;if(mode==='play'){mode='pause';showMenu('ПАУЗА','Гру призупинено','Продовжити')}else if(mode==='pause')resume()}
-$('play').onclick=()=>{if(mode==='pause')resume();else{online=0;role=null;if(mode==='over')gen();start()}};
+$('play').onclick=()=>{if(mode==='pause')resume();else{online=0;role=null;ranked=0;if(mode==='over'||H!==1800)gen();start()}};
 $('map').onclick=()=>{if(online)return;gen();if(mode!=='menu')start()};
 const setDif=()=>{$('dif').textContent='Складність: '+DF[di][0]};setDif();
 $('dif').onclick=()=>{di=(di+1)%3;setDif();$('sub').textContent='Карта #'+seed+' · '+DF[di][0]};
@@ -284,9 +296,9 @@ $('cards').onwheel=e=>{e.currentTarget.scrollLeft+=e.deltaY};
 $('mm').onpointerdown=$('mm').onpointermove=e=>{if(e.buttons){const q=$('mm').getBoundingClientRect();cx=(e.clientX-q.left)/q.width*W;cy=(e.clientY-q.top)/q.height*H;zoom(cz)}};
 addEventListener('keydown',e=>kd[e.key.toLowerCase()]=1);addEventListener('keyup',e=>kd[e.key.toLowerCase()]=0);
 addEventListener('resize',()=>{if(mode==='menu')gen();else fit()});
-function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;tt=t/1000;if(mode==='play'){if(role==='guest')gstep(dt);else{tick(dt);if(role==='host')hsend(dt)}const v=800*dt/cz,X=(kd.d||kd.arrowright?1:0)-(kd.a||kd.arrowleft?1:0),Y=(kd.s||kd.arrowdown?1:0)-(kd.w||kd.arrowup?1:0);if(X||Y){cx+=X*v;cy+=Y*v;zoom(cz)}}if(AC)eng();sel();draw(tt);mmap();requestAnimationFrame(loop)}
+function loop(t){const dt=Math.min(.05,(t-last)/1000||0);last=t;tt=t/1000;nf=mode==='menu'?0:nightF(gt);RM=1-.3*nf;if(nf>0&&!nightOn){nightOn=1;toast('🌙 Настала ніч — дальність атаки −30%')}else if(nf===0&&nightOn){nightOn=0;if(mode==='play')toast('☀️ Світанок')}if(mode==='play'){if(role==='guest')gstep(dt);else{tick(dt);if(role==='host')hsend(dt)}const v=800*dt/cz,X=(kd.d||kd.arrowright?1:0)-(kd.a||kd.arrowleft?1:0),Y=(kd.s||kd.arrowdown?1:0)-(kd.w||kd.arrowup?1:0);if(X||Y){cx+=X*v;cy+=Y*v;zoom(cz)}}if(AC)eng();sel();draw(tt);mmap();requestAnimationFrame(loop)}
 const socket=typeof io==='function'?io():null;let host=0,rcode='',bad=0;
-const rview=(a,b)=>{$('mbox').style.display=a;$('rbox').style.display=b};
+const rview=(a,b,c)=>{$('mbox').style.display=a;$('rbox').style.display=b;$('abox').style.display=c||'none'};
 function rinfo(code,pl){rcode=code;$('rinfo').style.display='block';$('rcd').textContent=code;
 if(pl)$('rpl').replaceChildren(...pl.map(p=>{const d=document.createElement('div');d.textContent='• '+(typeof p==='string'?p:p.name||p.id||'?');return d}));
 $('rs').style.display=host?'block':'none';$('rw').style.display=host?'none':'block'}
@@ -304,7 +316,7 @@ function launch(){if(mode==='play')return;rview('block','none');if(mode==='over'
 if(socket)socket.on("gameStart",launchOnline);
 if(socket)socket.on("roomClosed",()=>{if(online&&mode==='play'){mode='over';showMenu('КІНЕЦЬ','Хост вийшов','Грати знову');return}alert('Хост вийшов — кімнату закрито');$('rinfo').style.display='none';host=0;rcode=''});
 const nm=()=>$('pn').value.trim()||'Гравець';
-$('online').onclick=()=>rview('none','block');$('rb').onclick=()=>rview('block','none');
+$('online').onclick=()=>rview('none','block');$('rb').onclick=()=>{rview('block','none');if(socket&&mode!=='play'){socket.emit('leaveRoom');rkReset();$('rinfo').style.display='none';host=0;rcode=''}};
 $('rc').onclick=()=>createIronWarRoom(nm());
 $('rj').onclick=()=>{const c=$('rcode').value.trim();if(!c)return alert('Введи код кімнати');joinIronWarRoom(c,nm())};
 $('rs').onclick=()=>{if(!socket)return;socket.emit("startGame",{code:rcode},res=>{if(res&&res.ok===false)alert(res.error||'Не вдалося розпочати')})};
@@ -314,24 +326,24 @@ const mulb=a=>()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.
 const _snd=snd,_fx=fx,R2=v=>Math.round(v*100)/100;
 snd=function(t,x,r){if(role==='host'&&evq.length<80)evq.push(['s',t,R2(x||0),R2(r||0)]);return _snd(t,x,r)};
 fx=function(x,y,r,big){if(role==='host'&&evq.length<80)evq.push(['f',R2(x),R2(y),R2(r),big?1:0]);return _fx(x,y,r,big)};
-function launchOnline(d){online=1;role=socket.id===d.host?'host':'guest';rview('block','none');$('rinfo').style.display='none';
+function launchOnline(d){online=1;ranked=d.ranked?1:0;rkReset();role=socket.id===d.host?'host':'guest';rview('block','none');$('rinfo').style.display='none';
 const r0=Math.random;Math.random=mulb(d.seed|0);try{gen()}finally{Math.random=r0}
 start();UM.clear();
-if(role==='guest'){SL.forEach(f=>{if(f.own>=0)f.own=1-f.own});cx=HQP[1][0]-260;cy=HQP[1][1];zoom(1);toast('Твоя територія — справа від лінії')}
-else toast('Твоя територія — зліва від лінії')}
-function snapshot(){return{c:[R2(cash[1]),R2(cash[0])],
+if(role==='guest'){SL.forEach(f=>{if(f.own>=0)f.own=1-f.own});cx=HQP[1][0]-260;cy=HQP[1][1];zoom(1);toast((ranked?'🏆 Ранкед · дохід ÷3 · ':'')+'Твоя територія — справа від лінії')}
+else toast((ranked?'🏆 Ранкед · дохід ÷3 · ':'')+'Твоя територія — зліва від лінії')}
+function snapshot(){return{gt:R2(gt),c:[R2(cash[1]),R2(cash[0])],
 h:[hq[1],hq[0]].map(h=>({x:h.x,y:h.y,hp:R2(h.hp),m:h.m,cd:0,s:1-h.s})),
 u:U.map(u=>({id:u.id,k:u.k,s:1-u.s,x:R2(u.x),y:R2(u.y),a:R2(u.a),ta:R2(u.ta),hp:R2(u.hp),m:u.m,rv:[R2(Math.max(0,u.rv[1])),R2(Math.max(0,u.rv[0]))],w:u.w?1:0,dn:u.dn?1:0})),
 st:ST.map(e=>({id:e.id,k:e.k,s:1-e.s,x:e.x,y:e.y,hp:R2(e.hp),m:e.m,ba:R2(e.ba),si:SL.indexOf(e.sl)})),
 p:P.map(q=>{const o={};for(const k in q){const v=q[k];if(typeof v==='number')o[k]=R2(v);else if(typeof v==='string')o[k]=v}if(q.s!==undefined)o.s=1-q.s;return o}),
 ev:evq.splice(0)}}
 function hsend(dt){snapT+=dt;if(snapT>=.05){snapT=0;socket.emit('snap',snapshot())}}
-function applySnap(d){if(role!=='guest'||mode!=='play')return;cash=d.c;hq=d.h;const seen=new Set();
+function applySnap(d){if(role!=='guest'||mode!=='play')return;cash=d.c;gt=d.gt||0;hq=d.h;const seen=new Set();
 U=d.u.map(q=>{seen.add(q.id);let o=UM.get(q.id);if(!o){o={...q,gx:q.x,gy:q.y,ga:q.a,gta:q.ta,t:Math.random()*9,cd:0};UM.set(q.id,o)}else{o.gx=q.x;o.gy=q.y;o.ga=q.a;o.gta=q.ta;o.hp=q.hp;o.m=q.m;o.rv=q.rv;o.w=q.w;o.dn=q.dn}return o});
 for(const id of [...UM.keys()])if(!seen.has(id))UM.delete(id);
 SL.forEach(f=>f.b=null);ST=d.st.map(q=>{const o={...q,t:0,pa:0,sl:SL[q.si]};if(o.sl)o.sl.b=o;return o});P=d.p;
 for(const e of d.ev){if(e[0]==='s'){_snd(e[1],e[2],e[3]);if(e[1]==='nuke'){flash=1;shake=40}}else{_fx(e[1],e[2],e[3],e[4]);shake=Math.max(shake,Math.min(30,e[3]/6))}}}
-function gstep(dt){const k=Math.min(1,dt*12);for(const u of U){u.t+=dt;u.x+=(u.gx-u.x)*k;u.y+=(u.gy-u.y)*k;u.a+=ang(u.ga,u.a)*k;u.ta+=ang(u.gta,u.ta)*k}
+function gstep(dt){gt+=dt;const k=Math.min(1,dt*12);for(const u of U){u.t+=dt;u.x+=(u.gx-u.x)*k;u.y+=(u.gy-u.y)*k;u.a+=ang(u.ga,u.a)*k;u.ta+=ang(u.gta,u.ta)*k}
 for(const p of P){if(p.v&&(p.t==='m'||p.t==='s')){const a=p.t==='m'?Math.atan2(p.ty-p.y,p.tx-p.x):p.a;p.x+=Math.cos(a)*p.v*dt;p.y+=Math.sin(a)*p.v*dt}else if(p.l!==undefined&&p.t!=='n')p.l-=dt}
 for(const f of F){f.l-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.96;f.vy*=.96}F=F.filter(f=>f.l>0)}
 if(socket){socket.on('snap',applySnap);
@@ -339,5 +351,26 @@ socket.on('cmd',c=>{if(role!=='host'||mode!=='play'||!c||typeof c.k!=='string'||
 if((T.sb||T.ppo||T.st)&&!(isFinite(x)&&isFinite(y)&&x>=0&&y>=0&&x<=W&&y<=H))return;buy(c.k,1,x,y)});
 socket.on('gameOver',d=>{if(role==='guest'&&mode==='play'){mode='over';showMenu(d&&d.w===1?'ПЕРЕМОГА':'ПОРАЗКА','Штаб знищено','Грати знову')}});
 $('rq').onclick=()=>socket.emit('quickMatch',{name:nm()},res=>{if(!res||!res.ok)return alert('Не вдалося знайти гру');host=res.host?1:0;rinfo(res.code);if(res.host)$('rw').textContent='Шукаємо суперника… гра почнеться сама'})}
+// ===== Акаунти та ранги =====
+const RN=['Бронза 1','Бронза 2','Бронза 3','Сілвер 1','Сілвер 2','Сілвер 3','Золото 1','Золото 2','Золото 3','Чемпіон'],RCOL=['#cd7f32','#cd7f32','#cd7f32','#c0c7d0','#c0c7d0','#c0c7d0','#ffd44a','#ffd44a','#ffd44a','#ff5a4f'];
+const rnk=rp=>Math.min(9,Math.max(0,Math.floor((rp||0)/100))),rtxt=rp=>RN[rnk(rp)]+(rnk(rp)===9?' · '+rp+' RP':' · '+(rp%100)+'/100 RP'),esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const tok=()=>{try{return localStorage.getItem('iw_tok')}catch(e){return null}},stok=v=>{try{v?localStorage.setItem('iw_tok',v):localStorage.removeItem('iw_tok')}catch(e){}};
+function rkReset(){rqOn=0;$('rk').textContent='🏆 Ранкед (1 на 1)'}
+function accUI(){const L=ME?'👤 '+esc(ME.name)+' · <span style="color:'+RCOL[rnk(ME.rp)]+'">'+rtxt(ME.rp)+'</span>':'Гість <span style="opacity:.6;font-weight:400">· увійди для ранкеду</span>';
+$('accl').innerHTML=L;$('rkinfo').innerHTML=ME?L+' <span style="opacity:.7">· '+ME.w+'П / '+ME.l+'Пор</span>':'Для ранкеду потрібен акаунт (Меню → Акаунт)';
+$('ainfo').innerHTML=ME?L+'<br><span style="opacity:.7;font-size:13px">Перемог: '+ME.w+' · Поразок: '+ME.l+'</span>':'Не ввійдено';$('aform').style.display=ME?'none':'block';$('alo').style.display=ME?'block':'none';$('acb').textContent=ME?'Акаунт · '+ME.name:'Акаунт / Вхід'}
+function authDone(r){if(!r||!r.ok){$('aerr').textContent=(r&&r.error)||'Помилка';return}ME=r.user;if(r.token)stok(r.token);$('aerr').textContent='';$('ap').value='';accUI()}
+const cred=()=>({name:$('an').value.trim(),pass:$('ap').value});
+$('acb').onclick=()=>{$('aerr').textContent='';rview('none','none','block');accUI()};
+$('ab').onclick=()=>rview('block','none');
+$('ali').onclick=()=>{if(!socket){$('aerr').textContent='Сервер недоступний';return}socket.emit('login',cred(),authDone)};
+$('are').onclick=()=>{if(!socket){$('aerr').textContent='Сервер недоступний';return}socket.emit('register',cred(),authDone)};
+$('alo').onclick=()=>{if(socket)socket.emit('logout',{token:tok()});stok(null);ME=null;accUI()};
+$('rk').onclick=()=>{if(!socket)return alert('Сервер недоступний');if(!ME)return alert('Спочатку увійди в акаунт (Меню → Акаунт)');
+if(rqOn){socket.emit('cancelRanked');rkReset();return}
+socket.emit('rankedQueue',{},r=>{if(!r||!r.ok){alert((r&&r.error)||'Не вдалося почати пошук');return}rqOn=1;$('rk').textContent='Шукаємо суперника… (скасувати)'})};
+if(socket){socket.on('connect',()=>{const t=tok();if(t)socket.emit('auth',{token:t},r=>{if(r&&r.ok){ME=r.user;accUI()}else if(r&&r.error==='bad_token'){stok(null);ME=null;accUI()}})});
+socket.on('rankUpdate',d=>{if(!d)return;if(ME)ME.rp=d.rp;if(ME){if(d.win)ME.w++;else ME.l++}accUI();const s=(d.delta>=0?'+':'')+d.delta+' RP · '+RN[rnk(d.rp)];$('sub').textContent='Ранкед: '+s;toast('🏆 '+s)})}
+accUI();
 gen();showMenu('IRON <span>WAR</span>',null,'Грати');requestAnimationFrame(loop);
 </script></body></html>
