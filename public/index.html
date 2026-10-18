@@ -363,7 +363,7 @@ function authDone(r){if(!r||!r.ok){$('aerr').textContent=(r&&r.error)||'Поми
 const cred=()=>({name:$('an').value.trim(),pass:$('ap').value});
 $('acb').onclick=()=>{$('aerr').textContent=!socket?NOSRV:'';rview('none','none','block');accUI()};
 $('ab').onclick=()=>rview('block','none');
-const NOSRV='Сервер недоступний. Запусти «node server.js» у папці гри й відкрий http://localhost:3000 (не відкривай index.html як файл)';
+const NOSRV='Сервер недоступний. Запусти «node server.js» у папці гри й відкрий http://localhost:7680 (не відкривай index.html як файл)';
 function accCall(ev){const e=$('aerr');if(!socket){e.textContent=NOSRV;return}if(!socket.connected){e.textContent='Немає з\'єднання з сервером… спробуй за кілька секунд';return}
 const c=cred();if(!c.name||!c.pass){e.textContent='Введи логін і пароль';return}e.textContent='…';
 socket.timeout(6000).emit(ev,c,(err,r)=>{if(err){e.textContent='Сервер не відповів — на ньому стара версія server.js без акаунтів. Заміни server.js на новий і перезапусти.';return}authDone(r)})}
